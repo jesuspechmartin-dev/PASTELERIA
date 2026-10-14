@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Doña Bellita Pastelería · Punto de Venta</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="config.js"></script>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+--bg:#fff1f7;--card:#fff;--tx:#4a1d33;--mu:#8f5b75;--ac:#de2976;--ac2:#fde0ee;--bd:#f5cfe1;--ok:#15803d;--bad:#dc2626}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#2a0f1d;--card:#381628;--tx:#fbe6f0;--mu:#c89bb2;--ac:#f0549a;--ac2:#552139;--bd:#5a2a43;--ok:#4ade80;--bad:#f87171}}
+:root[data-theme="dark"]{--bg:#2a0f1d;--card:#381628;--tx:#fbe6f0;--mu:#c89bb2;--ac:#f0549a;--ac2:#552139;--bd:#5a2a43;--ok:#4ade80;--bad:#f87171}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0 auto;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:720px;padding:12px}
+h1{font-size:18px;margin:0}
+header{display:flex;justify-content:space-between;align-items:center;gap:8px}
+select,input,button{font:inherit;color:var(--tx)}
+select,input{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:9px;width:100%}
+button{border:0;border-radius:10px;padding:10px 14px;background:var(--ac);color:#fff;font-weight:600;cursor:pointer}
+button.g{background:var(--ac2);color:var(--tx)}
+button.r{background:transparent;color:var(--bad);padding:4px 8px}
+.tabs{display:flex;gap:6px;margin:10px 0}
+.tabs button{flex:1;padding:10px 4px;background:var(--ac2);color:var(--tx)}
+.tabs button.on{background:var(--ac);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.p{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;text-align:left;color:var(--tx);font-weight:500}
+.p b{display:block;color:var(--ac);margin-top:4px}
+.p small{display:block;font-weight:400;color:var(--mu)}
+.p.low small{color:var(--bad)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:12px;margin-top:10px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 0}
+.q{display:flex;align-items:center;gap:8px}
+.q button{padding:2px 10px}
+.tot{font-size:22px;font-weight:700}
+.mu{color:var(--mu);font-size:13px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.three{display:grid;grid-template-columns:2fr 1fr 1fr;gap:6px;align-items:center}
+.ok{color:var(--ok);font-weight:700}
+.bad{color:var(--bad)}
+#ticket .lg{display:block;margin:0 auto 8px;width:72px;height:72px;border-radius:50%}
+.lb{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:700}
+.lb input,.lb select{height:52px;border-radius:14px;border-width:1.5px;padding:0 16px;font-size:16px}
+pre{margin:0;font:13px/1.4 ui-monospace,Menlo,Consolas,monospace;white-space:pre-wrap}
+@media print{
+  body *{visibility:hidden}
+  #ticket,#ticket *{visibility:visible}
+  #ticket{position:absolute;left:0;top:0;width:100%;border:0;background:#fff;color:#000}
+  .np{display:none!important}
+}
+</style>
+</head>
+<body>
+<div id="login" style="position:fixed;inset:0;z-index:50;background:var(--ac);overflow:auto;display:none">
+<div style="min-height:100%;max-width:440px;margin:0 auto;display:flex;flex-direction:column">
+<div style="flex:1;min-height:150px;display:flex;align-items:center;justify-content:center;padding:28px 0">
+<img id="logo2" alt="Doña Bellita Pastelería" width="140" height="140" style="border-radius:50%">
+</div>
+<form id="lf" style="background:var(--card);border-radius:32px 32px 0 0;padding:32px 28px 36px;display:flex;flex-direction:column;gap:16px">
+<div><h2 id="lt" style="margin:0;font-size:28px;font-weight:800">Bienvenido</h2><p id="ls" class="mu" style="margin:4px 0 0;font-size:15px">Inicia sesión para abrir tu caja</p></div>
+<label class="lb">Usuario<input id="lu" type="text" autocomplete="username" placeholder="Tu usuario"></label>
+<label class="lb">Contraseña<input id="lp" type="password" autocomplete="current-password" placeholder="••••••••"></label>
+<label class="lb" id="lcw" style="display:none">Confirmar contraseña<input id="lp2" type="password" autocomplete="new-password" placeholder="••••••••"></label>
+<label class="lb">Sucursal<select id="lb2"></select></label>
+<p id="le" class="bad" style="margin:0"></p>
+<button id="lbtn" type="submit" style="height:54px;font-size:17px;font-weight:800">Entrar</button>
+</form>
+</div>
+</div>
+<div id="appwrap" style="display:none">
+<header>
+  <div style="display:flex;align-items:center;gap:10px;min-width:0">
+    <img id="logo" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAANwAAADcCAMAAAAshD+zAAAB/lBMVEXdoa2eYWKyoZ7aa5ujbpPeiq+SVSfsrcz40ebceKO2bm7b4OL0pK9mNnvwznDwrRrgSIndmcKpAVWyr8UvQ4usWqz/f///AADsz6CxK3UyNXp8NgfzebZuZZb7Hnf/AP9/BATtvEQPO4t/f3/4V1d/AH9oQ33dgazon8R7SCKqqqrswjy4FSqqgl27xs7SGWg+Qntugae7LoK/xL+/////P7/dKHUAAAD8/PypQoThKHbRN4fPNnmNRhHx6O7RR4fjNoqxPITQVo6SRovu2OZMOoXUh6/WKoT+/v7mt9HSlrWwOXvRZ5hwRIvRx87oxtlwOoWvRX2tZ5HSeKauV4hSQonY1dM3Ooa0l6mOOoTSuMjjqMjjMnvXHWzl19OueJTLpbiGPAjVWI6QVy2thpm0prDLt6/Xp8W3lXnYZZa/P3/WxrdMOXzRaKTsyuKtiGv/VarLQnzr5drNdZvjK4f/f3/uxlHx1Y/XZJbsx621iKbuty+XOHuleFXDp5HllrkAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADRjqH+AAAAgHRSTlP///+c/1r/LBtuA/8V/////P8D//8DAgH/////BP8DAQL//wIDAv+FRP8D/wP/////////BAT+AP///v7+///8///5//////8F//////////////////////////7//////9P///////+tBP//////A/7///8C///O////////STelP6cAACw/SURBVHja1Z2HX9vI1rBl0yGkkb43m83dvXv3tvf9qmwVJEuWhS25F1wA26EZQgs1hCXhX//OmVF1AwwkfPolBoxt9OicOW3OjJjQHRzxB8dPre/Gxy4mhoaGTpeXVThkGR+Xl083h/4+cjE2Hqev+vfHB/G7OA/m1sGef/yFYj0YGRpaluXHkUiEh4N1DvxpMSI8luXloaGJCwvxDgBvF+7XSSKx+NjIJmAhlM3Deg8HFSERceKPcXzfy8nj+woXJyKLj01sqnKE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" alt="Doña Bellita Pastelería" width="48" height="48" style="border-radius:50%;flex:none">
+    <div><h1>Doña Bellita</h1><div class="mu" style="margin-top:0">Pastelería · Punto de venta</div></div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex:none"><select id="sw" style="display:none;width:auto;padding:6px 8px"></select><span id="who" class="mu"></span><button class="g" style="padding:8px 12px" onclick="logout()">Salir</button></div>
+</header>
+<div class="mu" style="margin-top:6px">☁️ Los datos de cada sucursal se guardan por separado en la nube</div>
+<div class="tabs">
+  <button data-t="venta" class="on">Venta</button>
+  <button data-t="prod">Productos</button>
+  <button data-t="caja">Caja</button>
+  <button data-t="rep">Reporte</button>
+</div>
+<main id="app"></main>
+</div>
+
+<script>
+const money=n=>'$'+(Math.round(n*100)/100).toFixed(2);
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=s=>document.querySelector(s);
+const ymd=(d=new Date())=>d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+const LOW=3;
+const DEF=()=>({list:[
+ {id:1,n:'Rebanada de pastel de chocolate',p:45,s:null},{id:2,n:'Rebanada de pastel de vainilla',p:40,s:null},
+ {id:3,n:'Pastel mediano (12 porciones)',p:380,s:null},{id:4,n:'Pastel grande (20 porciones)',p:620,s:null},
+ {id:5,n:'Cupcake',p:30,s:null},{id:6,n:'Galleta',p:15,s:null},{id:7,n:'Pan dulce',p:12,s:null},{id:8,n:'Gelatina',p:25,s:null}],nid:9});
+let branch='Motul',P=DEF(),S=[],C={},cajaDate=ymd();
+let tab='venta',cart={},pay={m:'Efectivo',rec:''},msg='',ticket=null,repDate=ymd();
+
+function load(){
+  P=DEF();S=[];C={};
+  try{const r=JSON.parse(localStorage.getItem('pos3_'+branch)||'null');if(r){if(r.P)P=r.P;if(r.S)S=r.S;if(r.C)C=r.C}}catch(e){}
+}
+function save(){try{localStorage.setItem('pos3_'+branch,JSON.stringify({P,S,C}));localStorage.setItem('pos3_branch',branch)}catch(e){msg='⚠️ No se pudo guardar en este dispositivo'}}
+try{const b=localStorage.getItem('pos3_branch');if(b)branch=b}catch(e){}
+load();
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>{tab=b.dataset.t;stockChk=null;if(tab==='caja')cajaDate=ymd();document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x===b));msg='';render()});
+
+const prod=id=>P.list.find(x=>x.id==id);
+const total=()=>Object.entries(cart).reduce((s,[id,q])=>{const p=prod(id);return s+(p?p.p*q:0)},0);
+
+function add(id){
+  const p=prod(id),q=(cart[id]||0)+1;
+  if(p.s!==null&&q>p.s){msg='⚠️ Solo quedan '+p.s+' de '+p.n;render();return}
+  cart[id]=q;msg='';render();
+}
+function chg(id,d){
+  const p=prod(id),q=(cart[id]||0)+d;
+  if(d>0&&p.s!==null&&q>p.s){msg='⚠️ Solo quedan '+p.s+' de '+p.n;render();return}
+  if(q<=0)delete cart[id];else cart[id]=q;render();
+}
+function cobrar(){
+  const t=total();if(!t)return;
+  if(C[ymd()]&&C[ymd()].closed){msg='🔒 La caja de hoy está cerrada. Reábrela en la pestaña Caja.';render();return}
+  const rec=pay.m==='Efectivo'?parseFloat(pay.rec)||0:t;
+  if(pay.m==='Efectivo'&&rec<t){msg='⚠️ El efectivo recibido es menor al total.';render();return}
+  const items=Object.entries(cart).map(([id,q])=>{const p=prod(id);if(p.s!==null)p.s-=q;return{id:p.id,n:p.n,p:p.p,q}});
+  const now=new Date();
+  const sale={id:now.getTime(),d:ymd(now),t:now.toISOString(),items,total:t,m:pay.m,rec,ch:rec-t};
+  S.push(sale);save();ticket=sale;cart={};pay.rec='';msg='';render();
+}
+function ticketText(s){
+  const w=32,line='-'.repeat(w);
+  const dt=new Date(s.t).toLocaleString('es-MX',{dateStyle:'short',timeStyle:'short'});
+  const rows=s.items.map(i=>{const l=i.q+' x '+i.n,r=money(i.p*i.q);return l.length+r.length+1>w?l+'\n'+' '.repeat(Math.max(1,w-r.length))+r:l+' '.repeat(w-l.length-r.length)+r}).join('\n');
+  return `DOÑA BELLITA\nPASTELERÍA\nSucursal ${branch}\n${dt}\n${line}\n${rows}\n${line}\nTOTAL: ${money(s.total)}\nPago: ${s.m}`+(s.m==='Efectivo'?`\nRecibido: ${money(s.rec)}\nCambio: ${money(s.ch)}`:'')+`\n${line}\n¡Gracias por su compra!`;
+}
+function imprimir(){try{window.print()}catch(e){msg='⚠️ Imprimir no está disponible aquí';render()}}
+function addProd(){
+  const n=$('#nn').value.trim(),p=parseFloat($('#np').value),sv=$('#ns').value;
+  if(!n||isNaN(p)||p<0)return;
+  P.list.push({id:P.nid++,n,p,s:sv===''?null:Math.max(0,parseInt(sv))});save();render();
+}
+function delProd(id){if(confirm('¿Eliminar producto?')){P.list=P.list.filter(x=>x.id!==id);save();render()}}
+function editPrice(id,v){const p=prod(id),n=parseFloat(v);if(p&&!isNaN(n)){p.p=n;save()}}
+function editStock(id,v){const p=prod(id);if(!p)return;p.s=v===''?null:Math.max(0,parseInt(v)||0);save();render()}
+function delSale(id){
+  if(!confirm('¿Cancelar esta venta? Se regresará el producto al inventario.'))return;
+  const s=S.find(x=>x.id===id);if(!s)return;
+  s.items.forEach(i=>{const p=prod(i.id);if(p&&p.s!==null)p.s+=i.q});
+  S=S.filter(x=>x.id!==id);save();render();
+}
+
+
+function setTab(t){tab=t;document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===t))}
+function cajaBanner(){
+  const c=C[ymd()];
+  if(c&&c.closed)return '<div class="card np">🔒 La caja de hoy está cerrada.</div>';
+  if(c&&c.start!=null)return '';
+  return '<div class="card np">⚠️ Aún no registras el fondo inicial de hoy. <button class="g" style="margin-top:6px" onclick="cajaDate=ymd();setTab(\'caja\');render()">Ir a Caja</button></div>';
+}
+function cget(d){return C[d]||(C[d]={start:null,out:0,counted:null,closed:false,at:null})}
+function cset(k,v){const c=cget(cajaDate);const n=parseFloat(v);c[k]=isNaN(n)?(k==='out'?0:null):Math.max(0,n);save();render()}
+function cerrar(){
+  const c=cget(cajaDate);
+  if(c.start==null){msg='⚠️ Captura primero el fondo inicial.';render();return}
+  if(c.counted==null){msg='⚠️ Captura el efectivo contado para cerrar.';render();return}
+  if(cajaDate===ymd()&&trackedProds().length){stockChk=stockChk||{};stockMsg='';render();window.scrollTo({top:0});return}
+  finalizar(c);
+}
+function finalizar(c){c.closed=true;c.at=new Date().toISOString();msg='';save();render()}
+function reabrir(){const c=cget(cajaDate);c.closed=false;c.at=null;c.stock=null;save();render()}
+let stockChk=null,stockMsg='';
+const trackedProds=()=>P.list.filter(p=>p.s!==null);
+function stockDiff(p){
+  const v=stockChk[p.id];if(v===undefined||v===''||isNaN(parseInt(v)))return '';
+  const d=parseInt(v)-p.s;
+  return d===0?'<span class="ok">✔</span>':'<span class="bad">'+(d>0?'+':'')+d+'</span>';
+}
+function stockBtnLabel(){
+  const n=trackedProds().filter(p=>{const v=stockChk[p.id];return v!==undefined&&v!==''&&!isNaN(parseInt(v))&&parseInt(v)!==p.s}).length;
+  return n?'Ajustar inventario y cerrar caja ('+n+')':'Confirmar inventario y cerrar caja';
+}
+function stockIn(id,v){stockChk[id]=v;$('#sd'+id).innerHTML=stockDiff(prod(id));$('#sbtn').textContent=stockBtnLabel()}
+function stockTodo(){trackedProds().forEach(p=>stockChk[p.id]=String(p.s));render()}
+function stockCard(){
+  if(stockChk===null)return '';
+  return `<div class="card np"><b>📦 Validar inventario antes de cerrar</b>
+  <div class="mu">Cuenta lo que hay físicamente y captúralo. Si hay diferencias, el sistema se ajustará a tu conteo y quedará registrado en el corte.</div>
+  ${trackedProds().map(p=>`<div class="three" style="margin-top:8px"><span>${esc(p.n)}<br><span class="mu">Sistema: ${p.s}</span></span><input type="number" inputmode="numeric" placeholder="Conteo" value="${stockChk[p.id]===undefined?'':stockChk[p.id]}" oninput="stockIn(${p.id},this.value)"><span id="sd${p.id}">${stockDiff(p)}</span></div>`).join('')}
+  <div class="two" style="margin-top:10px"><button class="g" onclick="stockChk=null;stockMsg='';render()">Cancelar</button><button class="g" onclick="stockTodo()">Todo coincide</button></div>
+  <button id="sbtn" style="width:100%;margin-top:8px" onclick="confirmarStock()">${stockBtnLabel()}</button>
+  ${stockMsg?`<p>${stockMsg}</p>`:''}</div>`;
+}
+function confirmarStock(){
+  const T=trackedProds();
+  const miss=T.filter(p=>{const v=stockChk[p.id];return v===undefined||v===''||isNaN(parseInt(v))});
+  if(miss.length){stockMsg='⚠️ Falta capturar el conteo de: '+miss.map(p=>p.n).join(', ');render();return}
+  const diffs=T.map(p=>({id:p.id,n:p.n,sys:p.s,real:Math.max(0,parseInt(stockChk[p.id]))})).filter(x=>x.real!==x.sys);
+  diffs.forEach(x=>{prod(x.id).s=x.real});
+  const c=cget(cajaDate);
+  c.stock={at:new Date().toISOString(),n:T.length,diffs:diffs.map(x=>({n:x.n,sys:x.sys,real:x.real}))};
+  stockChk=null;stockMsg='';finalizar(c);
+}
+function renderCaja(a){
+  const d=cajaDate,c=C[d]||{start:null,out:0,counted:null,closed:false,at:null};
+  const L=S.filter(s=>s.d===d);
+  const sm=m=>L.filter(s=>s.m===m).reduce((x,s)=>x+s.total,0);
+  const ef=sm('Efectivo'),tj=sm('Tarjeta'),tr=sm('Transferencia');
+  const start=c.start||0,out=c.out||0,exp=start+ef-out;
+  const dif=c.counted==null?null:c.counted-exp;
+  const dis=c.closed?'disabled':'';
+  const difTxt=dif==null?'—':(Math.abs(dif)<0.005?'Cuadra ✔':(dif>0?'Sobrante ':'Faltante ')+money(Math.abs(dif)));
+  const w=32,ln='-'.repeat(w);
+  const fl=(l,r)=>l+' '.repeat(Math.max(1,w-l.length-r.length))+r;
+  const txt=['DOÑA BELLITA PASTELERÍA','CORTE DE CAJA','Sucursal '+branch,'Día '+d,ln,
+    fl('Fondo inicial',money(start)),fl('Ventas en efectivo',money(ef)),fl('Retiros / gastos','-'+money(out)),
+    fl('Efectivo esperado',money(exp)),fl('Efectivo contado',c.counted==null?'—':money(c.counted)),fl('Diferencia',difTxt),ln,
+    fl('Tarjeta',money(tj)),fl('Transferencia',money(tr)),fl('TOTAL VENTAS',money(ef+tj+tr)),fl('No. de ventas',String(L.length)),
+    c.stock?ln+'\nInventario validado ('+c.stock.n+' prod.)'+(c.stock.diffs.length?c.stock.diffs.map(x=>'\nAjuste '+x.n+': '+x.sys+' -> '+x.real).join(''):'\nSin diferencias'):'',
+    c.closed?ln+'\nCaja cerrada '+new Date(c.at).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'}):''].join('\n');
+  a.innerHTML=`${stockCard()}<div class="mu">Sucursal ${branch} · corte de caja del día</div>
+  ${me&&me.owner?'<input id="cd" type="date" class="np" value="'+d+'">':''}
+  <div class="card np">
+    <div class="mu">Fondo inicial (efectivo con el que abres)</div>
+    <input id="cs" type="number" inputmode="decimal" placeholder="Ej. 500" value="${c.start==null?'':c.start}" ${dis} onchange="cset('start',this.value)">
+    <div class="mu" style="margin-top:8px">Retiros / gastos en efectivo</div>
+    <input type="number" inputmode="decimal" placeholder="0" value="${c.out?c.out:''}" ${dis} onchange="cset('out',this.value)">
+    <div class="mu" style="margin-top:8px">Efectivo contado en caja (al cerrar)</div>
+    <input type="number" inputmode="decimal" placeholder="Cuenta tu efectivo" value="${c.counted==null?'':c.counted}" ${dis} onchange="cset('counted',this.value)">
+    <div class="two" style="margin-top:10px">${c.closed?(me&&me.owner?'<button class="g" onclick="reabrir()">Reabrir caja</button>':'<button class="g" disabled>Caja cerrada</button>'):'<button onclick="cerrar()">Cerrar caja</button>'}<button class="g" onclick="imprimir()">🖨️ Imprimir</button></div>
+    ${msg?`<p>${msg}</p>`:''}
+  </div>
+  <div class="card" id="ticket"><img class="lg" src="${$('#logo').src}" alt=""><pre>${esc(txt)}</pre></div>`;
+  if($('#cd'))$('#cd').onchange=e=>{if(e.target.value){cajaDate=e.target.value;msg='';stockChk=null;render()}};
+}
+
+let repMode='dia';
+const pd=x=>{const[y,m,d]=x.split('-').map(Number);return new Date(y,m-1,d)};
+function getRange(x,mode){
+  const dt=pd(x);
+  if(mode==='semana'){const f=new Date(dt);f.setDate(dt.getDate()-((dt.getDay()+6)%7));const t=new Date(f);t.setDate(f.getDate()+6);return[ymd(f),ymd(t)]}
+  return[ymd(new Date(dt.getFullYear(),dt.getMonth(),1)),ymd(new Date(dt.getFullYear(),dt.getMonth()+1,0))];
+}
+function shiftRep(dir){
+  const dt=pd(repDate);
+  if(repMode==='semana')dt.setDate(dt.getDate()+7*dir);
+  else{dt.setDate(1);dt.setMonth(dt.getMonth()+dir)}
+  repDate=ymd(dt);render();
+}
+function modeBar(){
+  return scopeBar()+`<div class="tabs" style="margin-top:0">${['dia','semana','mes'].map(m=>`<button class="${repMode===m?'on':''}" onclick="repMode='${m}';render()">${m==='dia'?'Día':m==='semana'?'Semana':'Mes'}</button>`).join('')}</div>`;
+}
+function renderPeriodo(a){
+  const[f,t]=getRange(repDate,repMode);
+  const pv=pd(repDate);
+  if(repMode==='semana')pv.setDate(pv.getDate()-7);else{pv.setDate(1);pv.setMonth(pv.getMonth()-1)}
+  const[pf,pt]=getRange(ymd(pv),repMode);
+  const AS=SS(),L=AS.filter(x=>x.d>=f&&x.d<=t),LP=AS.filter(x=>x.d>=pf&&x.d<=pt);
+  const sum=(f2,arr=L)=>arr.filter(f2).reduce((x,y)=>x+y.total,0);
+  const tot=sum(()=>true),totP=sum(()=>true,LP);
+  const cmp=totP>0?((tot-totP)/totP*100):null;
+  const prods={};L.forEach(x=>x.items.forEach(i=>{const o=prods[i.n]||(prods[i.n]={q:0,m:0});o.q+=i.q;o.m+=i.p*i.q}));
+  const top=Object.entries(prods).sort((x,y)=>y[1].m-x[1].m).slice(0,10);
+  const byDay={};L.forEach(x=>byDay[x.d]=(byDay[x.d]||0)+x.total);
+  const days=Object.keys(byDay).sort();
+  const max=Math.max(1,...days.map(d=>byDay[d]));
+  const fmt=(x,o)=>pd(x).toLocaleDateString('es-MX',o);
+  const label=repMode==='semana'?fmt(f,{day:'numeric',month:'short'})+' – '+fmt(t,{day:'numeric',month:'short',year:'numeric'}):fmt(f,{month:'long',year:'numeric'});
+  const cierres=days.filter(d=>C[d]&&C[d].closed).length;
+  a.innerHTML=`${modeBar()}
+  <div class="row"><button class="g" onclick="shiftRep(-1)">◀</button><b style="text-align:center">${label}</b><button class="g" onclick="shiftRep(1)">▶</button></div>
+  <div class="mu" style="text-align:center">${scopeLabel()}</div>
+  <div class="card"><div class="tot">${money(tot)}</div><div class="mu">${L.length} ventas · ticket promedio ${money(L.length?tot/L.length:0)}</div>
+    ${cmp===null?'':`<div class="${cmp>=0?'ok':'bad'}">${cmp>=0?'▲':'▼'} ${Math.abs(cmp).toFixed(1)}% vs periodo anterior (${money(totP)})</div>`}
+    <div class="row"><span>Efectivo</span><span>${money(sum(x=>x.m==='Efectivo'))}</span></div>
+    <div class="row"><span>Tarjeta</span><span>${money(sum(x=>x.m==='Tarjeta'))}</span></div>
+    <div class="row"><span>Transferencia</span><span>${money(sum(x=>x.m==='Transferencia'))}</span></div></div>
+  <div class="card"><b>Ventas por día</b>${days.map(d=>`<div class="row" style="flex-wrap:wrap"><span>${fmt(d,{weekday:'short',day:'numeric',month:'short'})}${C[d]&&C[d].closed?' 🔒':''}</span><span>${money(byDay[d])}</span><div style="flex-basis:100%;height:6px;border-radius:4px;background:var(--ac2)"><div style="height:6px;border-radius:4px;background:var(--ac);width:${byDay[d]/max*100}%"></div></div></div>`).join('')||'<p class="mu">Sin ventas en este periodo.</p>'}
+    ${days.length?`<div class="mu">🔒 = caja cerrada (${cierres} de ${days.length} días)</div>`:''}</div>
+  <div class="card"><b>Productos más vendidos</b>${top.map(([n,o])=>`<div class="row"><span>${esc(n)}<br><span class="mu">${o.q} pzas</span></span><span>${money(o.m)}</span></div>`).join('')||'<p class="mu">Sin ventas en este periodo.</p>'}</div>`;
+  if(isAll())a.querySelector('.card').insertAdjacentHTML('afterend',branchSplit(L));
+}
+
+let BR=['Motul','Tixkokob'],bmsg='';
+function canAccess(f,br){return !!f&&BR.includes(br)&&(f.owner||f.b===br||!!f.both)}
+function branchError(f,br){
+  if(f.owner)return '';
+  if(!BR.includes(f.b)&&!f.both)return 'Este usuario no tiene sucursal asignada. Pide al superusuario que se la asigne.';
+  if(!canAccess(f,br))return 'No perteneces a la sucursal '+br+'. Tu sucursal asignada es '+f.b+'. Solo el superusuario puede autorizar acceso a otras sucursales.';
+  return '';
+}
+let U=[],me=null,umsg='';
+async function hash(x,salt){
+  try{const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(salt+':'+x));return Array.from(new Uint8Array(b)).map(v=>v.toString(16).padStart(2,'0')).join('')}
+  catch(e){let h=5381;const t=salt+':'+x;for(let i=0;i<t.length;i++)h=((h<<5)+h+t.charCodeAt(i))|0;return 'x'+(h>>>0).toString(16)}
+}
+function loadUsers(){try{U=JSON.parse(localStorage.getItem('pos3_users')||'[]')}catch(e){U=[]}}
+function saveUsers(){try{localStorage.setItem('pos3_users',JSON.stringify(U))}catch(e){}}
+function showLogin(){
+  loadUsers();me=null;
+  $('#appwrap').style.display='none';$('#login').style.display='block';
+  const first=!U.length;
+  $('#lt').textContent=first?'Crea el superusuario':'Bienvenido';
+  $('#ls').textContent=first?'Primera vez en este dispositivo: crea la cuenta del superusuario. Desde ahí darás de alta a tus empleados.':'Inicia sesión para abrir tu caja';
+  $('#lcw').style.display=first?'flex':'none';
+  $('#lbtn').textContent=first?'Crear superusuario y entrar':'Entrar';
+  $('#lb2').value=branch;$('#lp').value='';$('#lp2').value='';$('#le').textContent='';
+}
+async function doLogin(e){
+  e.preventDefault();
+  const u=$('#lu').value.trim(),pw=$('#lp').value,br=$('#lb2').value,first=!U.length;
+  const err=m=>{$('#le').textContent=m};
+  if(!u||!pw){err('Escribe tu usuario y contraseña.');return}
+  if(first){
+    if(pw.length<4){err('La contraseña debe tener al menos 4 caracteres.');return}
+    if(pw!==$('#lp2').value){err('Las contraseñas no coinciden.');return}
+    const salt=Math.random().toString(36).slice(2);
+    U=[{u,s:salt,h:await hash(pw,salt),owner:true,b:'Todas'}];saveUsers();me=U[0];
+  }else{
+    const f=U.find(x=>x.u.toLowerCase()===u.toLowerCase());
+    if(!f||await hash(pw,f.s)!==f.h){err('Usuario o contraseña incorrectos.');return}
+    const bm=branchError(f,br);if(bm){err(bm);return}
+    me=f;
+  }
+  enter(br);
+}
+function enter(br){
+  if(!canAccess(me,br)){showLogin();$('#le').textContent='No tienes acceso a la sucursal '+br+'.';return}
+  branch=br;stockChk=null;load();cart={};ticket=null;msg='';save();
+  try{sessionStorage.setItem('pos3_sess',JSON.stringify({u:me.u,b:br}))}catch(e){}
+  $('#login').style.display='none';$('#appwrap').style.display='block';
+  const multi=me.owner||me.both;
+  $('#who').textContent=me.u+(me.owner?' ★':'')+(multi?'':' · '+branch);
+  const sw=$('#sw');sw.style.display=multi?'block':'none';sw.value=branch;
+  setTab('venta');render();window.scrollTo({top:0});
+}
+function logout(){try{sessionStorage.removeItem('pos3_sess')}catch(e){}cart={};ticket=null;stockChk=null;pay.rec='';$('#lu').value='';showLogin()}
+function userCard(){
+  return `<div class="card"><b>Usuarios</b>
+  <div class="mu">Solo el superusuario crea cuentas y accede a todas las sucursales. Cada empleado solo ve su sucursal, salvo que tú le autorices ambas.</div>
+  ${U.map((x,i)=>`<div class="row"><span>${esc(x.u)}<br><span class="mu">${x.owner?'Superusuario · todas las sucursales':'Cajero · '+(x.both?'Todas las sucursales (autorizado)':BR.includes(x.b)?'Solo sucursal '+x.b:'⚠️ Sin sucursal asignada')}</span></span>${x.owner?'':`<button class="r" onclick="delUser(${i})">✕</button>`}</div>`).join('')}
+  <div style="margin-top:10px"><b>Agregar o actualizar usuario</b></div>
+  <div class="two" style="margin-top:8px"><input id="nu" placeholder="Usuario" autocomplete="off"><input id="npw" type="text" placeholder="Contraseña" autocomplete="off"></div>
+  <select id="nb" style="margin-top:8px">${BR.map(b=>`<option value="${esc(b)}">Sucursal ${esc(b)}</option>`).join('')}</select>
+  <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px"><input id="nboth" type="checkbox" style="width:20px;height:20px;accent-color:var(--ac)">Autorizar también el acceso a todas las demás sucursales</label>
+  <button style="margin-top:8px;width:100%" onclick="addUser()">Guardar usuario</button>
+  <div class="mu">Si el usuario ya existe, se le cambia la contraseña y la sucursal.</div>${umsg?`<p>${umsg}</p>`:''}</div>`;
+}
+async function addUser(){
+  const u=$('#nu').value.trim(),pw=$('#npw').value,b=$('#nb').value,both=$('#nboth').checked;
+  if(!u||pw.length<4){umsg='⚠️ Escribe un usuario y una contraseña de al menos 4 caracteres.';render();return}
+  const salt=Math.random().toString(36).slice(2),h=await hash(pw,salt);
+  const f=U.find(x=>x.u.toLowerCase()===u.toLowerCase());
+  if(f){f.s=salt;f.h=h;if(!f.owner){f.b=b;f.both=both}umsg='✅ Usuario actualizado.'}
+  else{U.push({u,s:salt,h,b,both});umsg='✅ Usuario creado.'}
+  saveUsers();render();
+}
+function delUser(i){if(U[i]&&!U[i].owner){U.splice(i,1);saveUsers();umsg='';render()}}
+
+function loadBranches(){
+  try{const r=JSON.parse(localStorage.getItem('pos3_branches')||'null');if(Array.isArray(r)&&r.length&&r.every(x=>typeof x==='string'))BR=r}catch(e){}
+}
+function saveBranches(){try{localStorage.setItem('pos3_branches',JSON.stringify(BR))}catch(e){}}
+function fillBranchSelects(){
+  const o=BR.map(b=>`<option value="${esc(b)}">${esc(b)}</option>`).join('');
+  $('#lb2').innerHTML=o;$('#sw').innerHTML=o;
+  $('#lb2').value=BR.includes(branch)?branch:BR[0];$('#sw').value=branch;
+}
+function branchCard(){
+  return `<div class="card"><b>Sucursales</b>
+  <div class="mu">Solo el superusuario crea sucursales. Cada una guarda sus ventas, inventario y caja por separado.</div>
+  ${BR.map((b,i)=>`<div class="row"><span>${esc(b)}${b===branch?' <span class="mu">(actual)</span>':''}</span>${BR.length>1&&b!==branch?`<button class="r" onclick="delBranch(${i})">✕</button>`:''}</div>`).join('')}
+  <div class="two" style="margin-top:8px"><input id="nbr" placeholder="Nombre de la sucursal" autocomplete="off"><button onclick="addBranch()">Crear sucursal</button></div>${bmsg?`<p>${bmsg}</p>`:''}</div>`;
+}
+function addBranch(){
+  const n=$('#nbr').value.trim().replace(/\s+/g,' ');
+  if(!/^[\p{L}\p{N} .'-]{2,30}$/u.test(n)){bmsg='⚠️ Usa de 2 a 30 caracteres (letras, números, espacios).';render();return}
+  if(['users','branch','branches','sess'].includes(n.toLowerCase())||BR.some(b=>b.toLowerCase()===n.toLowerCase())){bmsg='⚠️ Ese nombre no está disponible o ya existe.';render();return}
+  BR.push(n);saveBranches();fillBranchSelects();bmsg='✅ Sucursal "'+n+'" creada. Ya puedes asignarle usuarios.';render();
+}
+function delBranch(i){
+  const b=BR[i];if(!b||b===branch||BR.length<2)return;
+  if(U.some(x=>!x.owner&&x.b===b)){bmsg='⚠️ No se puede quitar: hay usuarios asignados a '+b+'.';render();return}
+  try{const r=JSON.parse(localStorage.getItem('pos3_'+b)||'null');if(r&&r.S&&r.S.length){bmsg='⚠️ No se puede quitar: '+b+' ya tiene ventas registradas.';render();return}}catch(e){}
+  try{localStorage.removeItem('pos3_'+b)}catch(e){}
+  BR.splice(i,1);saveBranches();fillBranchSelects();bmsg='✅ Sucursal quitada.';render();
+}
+
+let repAll=false,bkText='',bkMsg='',rstArm=false;
+const isAll=()=>repAll&&!!me&&!!me.owner;
+const SS=()=>isAll()?allSales():S;
+const scopeLabel=()=>isAll()?'Todas las sucursales':'Sucursal '+branch;
+function allSales(){
+  const out=[];
+  BR.forEach(b=>{
+    let arr=[];
+    if(b===branch)arr=S;
+    else{try{const r=JSON.parse(localStorage.getItem('pos3_'+b)||'null');if(r&&r.S)arr=r.S}catch(e){}}
+    arr.forEach(x=>out.push(Object.assign({br:b},x)));
+  });
+  return out;
+}
+function scopeBar(){
+  if(!(me&&me.owner)||BR.length<2)return '';
+  return `<div class="tabs" style="margin-top:0"><button class="${repAll?'':'on'}" onclick="repAll=false;render()">Sucursal actual</button><button class="${repAll?'on':''}" onclick="repAll=true;render()">Todas las sucursales</button></div>`;
+}
+function branchSplit(L){
+  const rows=BR.map(b=>{const x=L.filter(s=>s.br===b);return `<div class="row"><span>${esc(b)}<br><span class="mu">${x.length} ventas</span></span><span>${money(x.reduce((t,s)=>t+s.total,0))}</span></div>`}).join('');
+  return `<div class="card"><b>Por sucursal</b>${rows}</div>`;
+}
+function backupCard(){
+  return `<div class="card"><b>Respaldo de datos</b>
+  <div class="mu">Incluye sucursales, usuarios, productos, inventario, ventas y cortes de caja de este dispositivo. Guárdalo en un lugar seguro: contiene las cuentas de tus usuarios.</div>
+  <textarea id="bk" rows="4" placeholder="Aquí aparece el respaldo. Para restaurar, pega aquí uno anterior." oninput="bkText=this.value;rstArm=false" style="width:100%;margin-top:8px;background:var(--card);color:var(--tx);border:1px solid var(--bd);border-radius:10px;padding:9px;font:12px ui-monospace,Menlo,monospace">${esc(bkText)}</textarea>
+  <div class="two" style="margin-top:8px"><button onclick="genBackup()">Generar respaldo</button><button class="g" onclick="doRestore()">${rstArm?'Confirmar reemplazo':'Restaurar'}</button></div>
+  ${bkMsg?`<p>${bkMsg}</p>`:''}</div>`;
+}
+function genBackup(){
+  save();
+  const data={};BR.forEach(b=>{try{data[b]=JSON.parse(localStorage.getItem('pos3_'+b)||'null')||{P:DEF(),S:[],C:{}}}catch(e){data[b]={P:DEF(),S:[],C:{}}}});
+  bkText=JSON.stringify({v:1,at:new Date().toISOString(),branches:BR,users:U,data});
+  rstArm=false;bkMsg='✅ Respaldo generado. Selecciona todo el texto del cuadro, cópialo y guárdalo (por ejemplo, en un mensaje a ti mismo).';
+  try{navigator.clipboard.writeText(bkText).then(()=>{bkMsg='✅ Respaldo generado y copiado al portapapeles. Pégalo en un lugar seguro.';render()}).catch(()=>{})}catch(e){}
+  render();
+}
+function doRestore(){
+  let r;
+  try{r=JSON.parse(bkText)}catch(e){bkMsg='⚠️ El texto no es un respaldo válido.';rstArm=false;render();return}
+  const ok=r&&r.v===1&&Array.isArray(r.branches)&&r.branches.length&&r.branches.every(b=>typeof b==='string')&&Array.isArray(r.users)&&r.users.some(x=>x&&x.owner)&&r.data&&typeof r.data==='object';
+  if(!ok){bkMsg='⚠️ El texto no es un respaldo válido.';rstArm=false;render();return}
+  if(!rstArm){rstArm=true;bkMsg='⚠️ Esto reemplazará TODOS los datos de este dispositivo con los del respaldo. Presiona "Confirmar reemplazo" para continuar.';render();return}
+  try{
+    BR.forEach(b=>{try{localStorage.removeItem('pos3_'+b)}catch(e){}});
+    r.branches.forEach(b=>{if(r.data[b])localStorage.setItem('pos3_'+b,JSON.stringify(r.data[b]))});
+    localStorage.setItem('pos3_branches',JSON.stringify(r.branches));
+    localStorage.setItem('pos3_users',JSON.stringify(r.users));
+  }catch(e){bkMsg='⚠️ No se pudo restaurar en este dispositivo.';rstArm=false;render();return}
+  rstArm=false;bkText='';bkMsg='';
+  loadBranches();if(!BR.includes(branch))branch=BR[0];load();fillBranchSelects();
+  logout();$('#le').textContent='✅ Respaldo restaurado. Inicia sesión con tus cuentas.';
+}
+
+function render(){
+  const a=$('#app');
+  if(tab==='venta'){
+    const t=total();
+    a.innerHTML=`${cajaBanner()}${ticket?`<div class="card" id="ticket"><img class="lg" src="${$('#logo').src}" alt=""><pre>${esc(ticketText(ticket))}</pre>
+      <div class="two np" style="margin-top:10px"><button class="g" onclick="ticket=null;render()">Cerrar</button><button onclick="imprimir()">🖨️ Imprimir ticket</button></div></div>`:''}
+    <div class="grid np" style="margin-top:10px">${P.list.map(p=>{const low=p.s!==null&&p.s<=LOW;return`<button class="p ${low?'low':''}" onclick="add(${p.id})">${esc(p.n)}<b>${money(p.p)}</b>${p.s!==null?`<small>${p.s===0?'Agotado':'Quedan '+p.s}</small>`:''}</button>`}).join('')}</div>
+    <div class="card np"><div class="mu">Sucursal ${branch}</div>
+    ${Object.keys(cart).length?Object.entries(cart).map(([id,q])=>{const p=prod(id);if(!p)return'';return`<div class="row"><span>${esc(p.n)}<br><span class="mu">${money(p.p)} c/u</span></span><span class="q"><button class="g" onclick="chg(${id},-1)">−</button>${q}<button class="g" onclick="chg(${id},1)">+</button></span></div>`}).join(''):'<p class="mu">Toca un producto para agregarlo.</p>'}
+    <div class="row"><span>Total</span><span class="tot">${money(t)}</span></div>
+    <div class="two"><select id="pm"><option>Efectivo</option><option>Tarjeta</option><option>Transferencia</option></select>
+    <input id="rec" type="number" inputmode="decimal" placeholder="Efectivo recibido" ${pay.m==='Efectivo'?'':'disabled'} value="${esc(pay.rec)}"></div>
+    <p class="ok" id="chg"></p>
+    <div class="two"><button class="g" onclick="cart={};render()">Vaciar</button><button onclick="cobrar()">Cobrar</button></div>
+    ${msg?`<p>${msg}</p>`:''}</div>`;
+    $('#pm').value=pay.m;
+    $('#pm').onchange=e=>{pay.m=e.target.value;render()};
+    const upd=()=>{const r=parseFloat(pay.rec)||0;$('#chg').textContent=(pay.m==='Efectivo'&&t>0&&r>=t)?'Cambio: '+money(r-t):''};
+    $('#rec').oninput=e=>{pay.rec=e.target.value;upd()};upd();
+  }else if(tab==='prod'){
+    a.innerHTML=`<div class="card"><b>Agregar producto</b>
+    <div class="three" style="margin-top:8px"><input id="nn" placeholder="Nombre"><input id="np" type="number" inputmode="decimal" placeholder="Precio"><input id="ns" type="number" inputmode="numeric" placeholder="Stock"></div>
+    <div class="mu">Deja el stock vacío si no quieres controlar inventario de ese producto.</div>
+    <button style="margin-top:8px;width:100%" onclick="addProd()">Agregar</button></div>
+    <div class="card"><div class="three mu"><span>Producto</span><span>Precio</span><span>Stock</span></div>
+    ${P.list.map(p=>`<div class="three"><span>${esc(p.n)}${p.s!==null&&p.s<=LOW?' <span class="bad">⚠️</span>':''}</span><input type="number" inputmode="decimal" value="${p.p}" onchange="editPrice(${p.id},this.value)"><span style="display:flex;gap:2px"><input type="number" inputmode="numeric" placeholder="—" value="${p.s===null?'':p.s}" onchange="editStock(${p.id},this.value)"><button class="r" onclick="delProd(${p.id})">✕</button></span></div>`).join('')}</div>${msg?`<p>${msg}</p>`:''}`;
+    if(me&&me.owner)a.insertAdjacentHTML('beforeend',branchCard()+userCard()+backupCard());
+  }else if(tab==='caja'){
+    renderCaja(a);
+  }else if(repMode!=='dia'){
+    renderPeriodo(a);
+  }else{
+    const L=SS().filter(s=>s.d===repDate).sort((x,y)=>x.t<y.t?-1:1);
+    const sum=(f,arr=L)=>arr.filter(f).reduce((x,s)=>x+s.total,0);
+    const prods={};L.forEach(s=>s.items.forEach(i=>prods[i.n]=(prods[i.n]||0)+i.q));
+    const byDay={};SS().forEach(s=>byDay[s.d]=(byDay[s.d]||0)+s.total);
+    const days=Object.keys(byDay).sort().reverse().slice(0,14);
+    const low=isAll()?[]:P.list.filter(p=>p.s!==null&&p.s<=LOW);
+    a.innerHTML=`${modeBar()}<div class="mu">${scopeLabel()} · elige un día</div>
+    <input id="rd" type="date" value="${repDate}">
+    <div class="card"><div class="tot">${money(sum(()=>true))}</div><div class="mu">${L.length} ventas el ${repDate}</div>
+    <div class="row"><span>Efectivo</span><span>${money(sum(s=>s.m==='Efectivo'))}</span></div>
+    <div class="row"><span>Tarjeta</span><span>${money(sum(s=>s.m==='Tarjeta'))}</span></div>
+    <div class="row"><span>Transferencia</span><span>${money(sum(s=>s.m==='Transferencia'))}</span></div></div>
+    ${low.length?`<div class="card"><b class="bad">⚠️ Inventario bajo</b>${low.map(p=>`<div class="row"><span>${esc(p.n)}</span><span class="bad">${p.s}</span></div>`).join('')}</div>`:''}
+    <div class="card"><b>Productos vendidos</b>${Object.entries(prods).map(([n,q])=>`<div class="row"><span>${esc(n)}</span><span>${q}</span></div>`).join('')||'<p class="mu">Sin ventas ese día.</p>'}</div>
+    <div class="card"><b>Ventas</b>${L.slice().reverse().map(s=>`<div class="row"><span>${new Date(s.t).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})} · ${s.br?esc(s.br)+' · ':''}${s.m}</span><span>${money(s.total)} ${s.br?'':`<button class="r" onclick="ticket=S.find(x=>x.id==${s.id});tab='venta';document.querySelectorAll('.tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t==='venta'));render()">🧾</button>${me&&me.owner?'<button class="r" onclick="delSale('+s.id+')">✕</button>':''}`}</span></div>`).join('')||'<p class="mu">Sin ventas ese día.</p>'}</div>
+    <div class="card"><b>Historial por día</b>${days.map(d=>`<div class="row"><a href="#" style="color:var(--ac)" onclick="repDate='${d}';render();return false">${d}</a><span>${money(byDay[d])}</span></div>`).join('')||'<p class="mu">Aún no hay ventas.</p>'}</div>${msg?`<p>${msg}</p>`:''}`;
+    $('#rd').onchange=e=>{if(e.target.value){repDate=e.target.value;render()}};
+    if(isAll())a.querySelector('.card').insertAdjacentHTML('afterend',branchSplit(L));
+  }
+}
+</script>
+<script>
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+const DOM='@bellita.app',CACHE={};
+let busy=false,ch=null,rt=null,poll=null;
+function load(){const r=CACHE[branch];P=r?r.P:{list:[],nid:0};S=r?r.S:[];C=r?r.C:{}}
+async function fetchAll(f){let out=[],i=0;for(;;){const r=await f(i,i+999);if(r.error)throw r.error;out=out.concat(r.data);if(r.data.length<1000)break;i+=1000}return out}
+async function loadBranchData(b,d0){
+  const pr=await sb.from('products').select('id,n,p,s').eq('branch',b).order('id');
+  if(pr.error)throw pr.error;
+  const sa=await fetchAll((a,z)=>sb.from('sales').select('*').eq('branch',b).gte('d',d0).order('id').range(a,z));
+  const ca=await sb.from('cajas').select('d,value').eq('branch',b).gte('d',d0);
+  if(ca.error)throw ca.error;
+  const C={};ca.data.forEach(x=>{C[x.d]=x.value});
+  return{P:{list:pr.data.map(x=>({id:x.id,n:x.n,p:Number(x.p),s:x.s})),nid:0},
+    S:sa.map(x=>({id:x.id,d:x.d,t:x.t,items:x.items,total:Number(x.total),m:x.m,rec:Number(x.rec),ch:Number(x.ch)})),C};
+}
+async function pull(b,days=92,merge=false){
+  const d0=ymd(new Date(Date.now()-days*864e5));
+  const o=await loadBranchData(b,d0);
+  if(merge&&CACHE[b]){o.S=CACHE[b].S.filter(x=>x.d<d0).concat(o.S);o.C=Object.assign({},CACHE[b].C,o.C)}
+  CACHE[b]=o;
+}
+async function refresh(){
+  if(!me||!branch)return;
+  try{
+    await pull(branch,2,true);load();
+    const a=document.activeElement;
+    if(!(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName)))render();
+  }catch(e){}
+}
+function subscribeRT(){
+  stopRT();
+  const on=()=>{clearTimeout(rt);rt=setTimeout(refresh,500)};
+  ch=sb.channel('pos-'+Date.now());
+  ['products','sales','cajas'].forEach(t=>ch.on('postgres_changes',{event:'*',schema:'public',table:t},p=>{const b=(p.new&&p.new.branch)||(p.old&&p.old.branch);if(!b||b===branch)on()}));
+  ch.subscribe();
+  poll=setInterval(refresh,15000);
+}
+function stopRT(){clearTimeout(rt);clearInterval(poll);poll=null;if(ch){sb.removeChannel(ch);ch=null}}
+function save(){
+  [cajaDate,ymd()].forEach(d=>{const c=C[d];if(c)sb.from('cajas').upsert({branch,d,value:c},{onConflict:'branch,d'}).then(r=>{if(r.error){msg=/cerrada/.test(r.error.message)?'🔒 La caja está cerrada; solo el superusuario puede modificarla.':'⚠️ Sin conexión: el cambio de caja no se guardó.';render()}})});
+}
+async function cobrar(){
+  const t=total();if(!t||busy)return;
+  if(C[ymd()]&&C[ymd()].closed){msg='🔒 La caja de hoy está cerrada. Reábrela en la pestaña Caja.';render();return}
+  const rec=pay.m==='Efectivo'?parseFloat(pay.rec)||0:t;
+  if(pay.m==='Efectivo'&&rec<t){msg='⚠️ El efectivo recibido es menor al total.';render();return}
+  const items=Object.entries(cart).map(([id,q])=>{const p=prod(id);return{id:p.id,n:p.n,p:p.p,q}});
+  busy=true;
+  const r=await sb.rpc('registrar_venta',{p_branch:branch,p_m:pay.m,p_total:t,p_rec:rec,p_ch:rec-t,p_items:items});
+  busy=false;
+  if(r.error){
+    msg=/Sin stock/.test(r.error.message)?'⚠️ '+r.error.message+'. Otro cajero se llevó el producto; revisa tu carrito.':/cerrada/.test(r.error.message)?'🔒 La caja de hoy está cerrada.':'⚠️ No se pudo registrar la venta. Revisa tu conexión.';
+    await refresh();render();return;
+  }
+  const now=new Date();
+  const sale={id:r.data,d:ymd(now),t:now.toISOString(),items,total:t,m:pay.m,rec,ch:rec-t};
+  items.forEach(i=>{const p=prod(i.id);if(p&&p.s!==null)p.s-=i.q});
+  S.push(sale);ticket=sale;cart={};pay.rec='';msg='';render();
+}
+async function delSale(id){
+  if(!confirm('¿Cancelar esta venta? Se regresará el producto al inventario.'))return;
+  const r=await sb.rpc('cancelar_venta',{p_id:id});
+  if(r.error){msg=/superusuario/.test(r.error.message)?'⚠️ Solo el superusuario puede cancelar ventas.':'⚠️ No se pudo cancelar la venta.';render();return}
+  const x=S.find(v=>v.id===id);
+  if(x){x.items.forEach(i=>{const p=prod(i.id);if(p&&p.s!==null)p.s+=i.q});S.splice(S.indexOf(x),1)}
+  render();
+}
+async function addProd(){
+  const n=$('#nn').value.trim(),p=parseFloat($('#np').value),sv=$('#ns').value;
+  if(!n||isNaN(p)||p<0)return;
+  const r=await sb.from('products').insert({branch,n,p,s:sv===''?null:Math.max(0,parseInt(sv))}).select().single();
+  if(r.error){msg='⚠️ No se pudo guardar el producto.';render();return}
+  P.list.push({id:r.data.id,n:r.data.n,p:Number(r.data.p),s:r.data.s});render();
+}
+async function delProd(id){
+  if(!confirm('¿Eliminar producto?'))return;
+  const r=await sb.from('products').delete().eq('id',id).eq('branch',branch);
+  if(r.error){msg='⚠️ No se pudo eliminar.';render();return}
+  P.list=P.list.filter(x=>x.id!==id);render();
+}
+async function editPrice(id,v){
+  const p=prod(id),n=parseFloat(v);if(!p||isNaN(n)||n<0)return;
+  const r=await sb.from('products').update({p:n}).eq('id',id).eq('branch',branch);
+  if(r.error){msg='⚠️ No se pudo guardar el precio.';render();return}
+  p.p=n;
+}
+async function editStock(id,v){
+  const p=prod(id);if(!p)return;
+  const s=v===''?null:Math.max(0,parseInt(v)||0);
+  const r=await sb.from('products').update({s}).eq('id',id).eq('branch',branch);
+  if(r.error){msg='⚠️ No se pudo guardar el inventario.';render();return}
+  p.s=s;render();
+}
+async function confirmarStock(){
+  const T=trackedProds();
+  const miss=T.filter(p=>{const v=stockChk[p.id];return v===undefined||v===''||isNaN(parseInt(v))});
+  if(miss.length){stockMsg='⚠️ Falta capturar el conteo de: '+miss.map(p=>p.n).join(', ');render();return}
+  const diffs=T.map(p=>({id:p.id,n:p.n,sys:p.s,real:Math.max(0,parseInt(stockChk[p.id]))})).filter(x=>x.real!==x.sys);
+  for(const x of diffs){const r=await sb.rpc('ajustar_stock',{p_branch:branch,p_id:x.id,p_real:x.real});if(r.error){stockMsg='⚠️ No se pudo ajustar el inventario.';render();return}}
+  diffs.forEach(x=>{prod(x.id).s=x.real});
+  const c=cget(cajaDate);
+  c.stock={at:new Date().toISOString(),n:T.length,diffs:diffs.map(x=>({n:x.n,sys:x.sys,real:x.real}))};
+  stockChk=null;stockMsg='';finalizar(c);
+}
+async function loadBranches(){const r=await sb.from('branches').select('name').order('name');if(!r.error&&r.data&&r.data.length)BR=r.data.map(x=>x.name)}
+async function loadProfiles(){
+  const r=await sb.from('profiles').select('*').order('username');
+  U=(r.data||[]).map(x=>({u:x.username,id:x.id,owner:x.role==='admin',b:x.branch,both:x.all_branches}));
+}
+async function fn(body){
+  const {data:{session}}=await sb.auth.getSession();
+  const r=await fetch('/.netlify/functions/usuarios',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+session.access_token},body:JSON.stringify(body)});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(j.error||'Error del servidor');
+  return j;
+}
+function showLogin(){
+  me=null;$('#appwrap').style.display='none';$('#login').style.display='block';
+  $('#lt').textContent='Bienvenido';$('#ls').textContent='Inicia sesión para abrir tu caja';
+  $('#lcw').style.display='none';$('#lbtn').textContent='Entrar';$('#lbtn').disabled=false;
+  fillBranchSelects();$('#lp').value='';$('#le').textContent='';
+}
+async function doLogin(e){
+  e.preventDefault();
+  const u=$('#lu').value.trim().toLowerCase(),pw=$('#lp').value,br=$('#lb2').value;
+  const err=m=>{$('#le').textContent=m;$('#lbtn').disabled=false};
+  if(!u||!pw){err('Escribe tu usuario y contraseña.');return}
+  $('#lbtn').disabled=true;$('#le').textContent='';
+  const r=await sb.auth.signInWithPassword({email:u+DOM,password:pw});
+  if(r.error){err('Usuario o contraseña incorrectos.');return}
+  if(!await bootUser(br))await sb.auth.signOut();
+}
+async function bootUser(br){
+  const ur=await sb.auth.getUser();const user=ur.data&&ur.data.user;if(!user)return false;
+  const pr=await sb.from('profiles').select('*').eq('id',user.id).maybeSingle();
+  const p=pr.data;
+  if(!p){$('#le').textContent='Tu cuenta no tiene perfil. Avisa al superusuario.';$('#lbtn').disabled=false;return false}
+  const f={u:p.username,id:p.id,owner:p.role==='admin',b:p.branch,both:p.all_branches};
+  await loadBranches();fillBranchSelects();
+  br=br||(BR.includes(f.b)?f.b:BR[0]);
+  const m=branchError(f,br);
+  if(m){$('#le').textContent=m;$('#lbtn').disabled=false;return false}
+  me=f;
+  try{await enter(br)}catch(e){me=null;$('#le').textContent='⚠️ No se pudieron cargar los datos de la nube.';$('#lbtn').disabled=false;return false}
+  return true;
+}
+async function enter(br){
+  if(!canAccess(me,br))return;
+  await pull(br);
+  branch=br;stockChk=null;load();cart={};ticket=null;msg='';
+  try{sessionStorage.setItem('pos3_sess',br)}catch(e){}
+  subscribeRT();
+  if(me.owner)await loadProfiles();
+  $('#login').style.display='none';$('#appwrap').style.display='block';
+  const multi=me.owner||me.both;
+  $('#who').textContent=me.u+(me.owner?' ★':'')+(multi?'':' · '+branch);
+  const sw=$('#sw');sw.style.display=multi?'block':'none';sw.value=branch;
+  document.querySelector('[data-t=prod]').style.display=me.owner?'':'none';
+  setTab('venta');render();window.scrollTo({top:0});
+}
+async function logout(){
+  stopRT();await sb.auth.signOut();
+  try{sessionStorage.removeItem('pos3_sess')}catch(e){}
+  cart={};ticket=null;stockChk=null;pay.rec='';me=null;U=[];repAll=false;
+  for(const k in CACHE)delete CACHE[k];
+  $('#lu').value='';showLogin();
+}
+async function addUser(){
+  const u=$('#nu').value.trim().toLowerCase(),pw=$('#npw').value,b=$('#nb').value,both=$('#nboth').checked;
+  if(!/^[a-z0-9._-]{3,30}$/.test(u)||pw.length<6){umsg='⚠️ Usuario: 3 a 30 caracteres (minúsculas, números, . _ -). Contraseña: mínimo 6.';render();return}
+  try{await fn({action:'upsert',username:u,password:pw,branch:b,all_branches:both});await loadProfiles();umsg='✅ Usuario guardado.'}catch(e){umsg='⚠️ '+e.message}
+  render();
+}
+async function delUser(i){
+  const x=U[i];if(!x||x.owner)return;
+  try{await fn({action:'delete',id:x.id});await loadProfiles();umsg='✅ Usuario eliminado.'}catch(e){umsg='⚠️ '+e.message}
+  render();
+}
+async function addBranch(){
+  const n=$('#nbr').value.trim().replace(/\s+/g,' ');
+  if(!/^[\p{L}\p{N} .'-]{2,30}$/u.test(n)){bmsg='⚠️ Usa de 2 a 30 caracteres (letras, números, espacios).';render();return}
+  if(BR.some(b=>b.toLowerCase()===n.toLowerCase())){bmsg='⚠️ Esa sucursal ya existe.';render();return}
+  const r=await sb.from('branches').insert({name:n});
+  if(r.error){bmsg='⚠️ No se pudo crear: '+r.error.message;render();return}
+  await loadBranches();fillBranchSelects();bmsg='✅ Sucursal "'+n+'" creada. Ya puedes asignarle usuarios.';render();
+}
+async function delBranch(i){
+  const b=BR[i];if(!b||b===branch||BR.length<2)return;
+  if(U.some(x=>!x.owner&&x.b===b)){bmsg='⚠️ No se puede quitar: hay usuarios asignados a '+b+'.';render();return}
+  try{await pull(b)}catch(e){bmsg='⚠️ No se pudo verificar la sucursal.';render();return}
+  if(CACHE[b]&&CACHE[b].S&&CACHE[b].S.length){bmsg='⚠️ No se puede quitar: '+b+' ya tiene ventas registradas.';render();return}
+  const r=await sb.from('branches').delete().eq('name',b);
+  if(r.error){bmsg='⚠️ '+r.error.message;render();return}
+  delete CACHE[b];await loadBranches();fillBranchSelects();bmsg='✅ Sucursal quitada.';render();
+}
+function backupCard(){return ''}
+async function goAll(v){
+  repAll=v;
+  if(v&&me&&me.owner){try{await Promise.all(BR.filter(b=>b!==branch).map(b=>pull(b)))}catch(e){msg='⚠️ No se pudieron cargar todas las sucursales.'}}
+  render();
+}
+function scopeBar(){
+  if(!(me&&me.owner)||BR.length<2)return '';
+  return `<div class="tabs" style="margin-top:0"><button class="${repAll?'':'on'}" onclick="goAll(false)">Sucursal actual</button><button class="${repAll?'on':''}" onclick="goAll(true)">Todas las sucursales</button></div>`;
+}
+function allSales(){
+  const out=[];
+  BR.forEach(b=>{const r=b===branch?{S}:CACHE[b];((r&&r.S)||[]).forEach(x=>out.push(Object.assign({br:b},x)))});
+  return out;
+}
+(async()=>{
+  $('#logo2').src=$('#logo').src;
+  $('#lf').onsubmit=doLogin;
+  $('#sw').onchange=e=>{if(me&&canAccess(me,e.target.value))enter(e.target.value);else if(me)e.target.value=branch};
+  showLogin();render();
+  if(SUPABASE_URL.includes('TU-PROYECTO')){$('#le').textContent='⚠️ Falta configurar public/config.js con los datos de Supabase.';return}
+  await loadBranches();if(!BR.includes(branch))branch=BR[0];fillBranchSelects();
+  const sr=await sb.auth.getSession();
+  if(sr.data&&sr.data.session){let sb0=null;try{sb0=sessionStorage.getItem('pos3_sess')}catch(e){}await bootUser(sb0&&BR.includes(sb0)?sb0:null)}
+})();
+</script>
+</body>
+</html>
